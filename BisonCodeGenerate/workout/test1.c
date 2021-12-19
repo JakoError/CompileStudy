@@ -32,11 +32,6 @@ int main() {
     String str = malloc(1000);
     strcpy(str, "1122296vgp34uh8npppppppppppppppppqpppppppppppu-quvg9608tq37-v4908tj-q34vt33");
     String *p = malloc(0);
-//    *p = NULL;
-//    mystrcat(p,
-//             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaavv9834qphnu5tqqqqqqqqqqqqqqqqqqqqqqqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqtqnqqqqqqqqqqqqqqqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqnqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
-//    printf("%s", *p);
-//    free(*p);
-//    free(p);
+    printf("%d",strlen("                                               "));
     return 0;
 }

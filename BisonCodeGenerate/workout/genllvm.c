@@ -9,6 +9,8 @@
 #include "list.h"
 #include "ast.h"
 
+String comm_space = "                                               ";
+
 int mark = 1;
 int ti = 0;
 int fi = 0;
@@ -56,7 +58,7 @@ void genVarDefs(Bean VarDefs, String *buff) {
 }
 
 void genVarDef(Bean VarDef, String *buff) {
-    String s = newString(20);
+    String s = newString(20 + strlen(comm_space));
     String *buff1 = newStringP();//array (type)
     String *buff2 = newStringP();//init store
 
@@ -140,7 +142,7 @@ void genVarDef(Bean VarDef, String *buff) {
 
     sprintf(s, "  %%%d", *id_mark);
     s = genAlloca(s, *buff1, align);
-    sprintf(s + strlen(s), "\t\t\t\t; define %s\n", VarDef->value);
+    sprintf(s + strlen(s), "%s; define %s\n", comm_space, VarDef->value);
 
     bool out = buff == NULL;
     if (out) buff = newStringP();
@@ -355,22 +357,28 @@ void genBlockItem(Bean BlockItem, String *buff) {
 }
 
 void genIf(Bean If, String *buff) {
-    String s1 = newString(100);//if start
-    String s2 = newString(100);//if br end and end:
+    String s1 = newString(100 + strlen(comm_space));//if start
+    String s2 = newString(100 + strlen(comm_space));//if br end and end:
     String *buff1 = newStringP();
     String *buff2 = newStringP();
 
-    genCond(If->beans[0], buff1);
+    int *cond_result = genCond(If->beans[0], buff1);
 
-    sprintf(s1 + strlen(s1), "%%t%d:\t\t;if-body\n", ti);
-    sprintf(s2 + strlen(s2), "  br %%f%d\n\n", fi);
-    sprintf(s2 + strlen(s2), "%%f%d:\t\t;if-end\n", fi);
-    ti++;
-    fi++;
-
-    //set end before body
-    end = malloc(20);
-    sprintf(end, "%%f%d", fi);
+    if (cond_result == NULL) {
+        sprintf(s1 + strlen(s1), "%%t%d:%s;if-body\n", ti, comm_space);
+        sprintf(s2 + strlen(s2), "  br %%f%d\n\n", fi);
+        sprintf(s2 + strlen(s2), "%%f%d:%s;if-end\n", fi, comm_space);
+        ti++;
+        fi++;
+        //set end before body
+        end = malloc(20);
+        sprintf(end, "%%f%d", fi);
+    } else if (*cond_result) {//always true
+        printf("warning:expression always true\n");
+    } else {//always false
+        printf("warning:expression always false can't reach the if-body sentence\n");
+        return;
+    }
 
     genStmt(If->beans[1], buff2);
 
@@ -389,36 +397,43 @@ void genIf(Bean If, String *buff) {
 }
 
 void genIfElse(Bean IfElse, String *buff) {
-    String s1 = newString(100);//if start
+    String s1 = newString(100 + strlen(comm_space));//if start
     String s2 = newString(100);//if br end
-    String s3 = newString(100);//else start
-    String s4 = newString(100);//else br end and end:
+    String s3 = newString(100 + strlen(comm_space));//else start
+    String s4 = newString(100 + strlen(comm_space));//else br end and end:
     String *buff1 = newStringP();//cond
     String *buff2 = newStringP();//if-body
     String *buff3 = newStringP();//else-body
 
-    genCond(IfElse->beans[0], buff1);
+    int *cond_result = genCond(IfElse->beans[0], buff1);
 
-    sprintf(s1 + strlen(s1), "%%t%d:\t\t;if-body\n", ti);
-    sprintf(s3 + strlen(s3), "%%f%d:\t\t;else-body\n", fi);
+    if (cond_result == NULL) {
+        sprintf(s1 + strlen(s1), "%%t%d:%s;if-body\n", ti, comm_space);
+        sprintf(s3 + strlen(s3), "%%f%d:%s;else-body\n", fi, comm_space);
+        //set end before body
+        end = malloc(20);
+        sprintf(end, "%%e%d", ei);
+        ti++;
+        fi++;
+        //set end before body
+        end = malloc(20);
+        sprintf(end, "%%f%d", fi);
+        genStmt(IfElse->beans[1], buff2);//if-body
+        genStmt(IfElse->beans[2], buff3);//else-body
 
-    //set end before body
-    end = malloc(20);
-    sprintf(end, "%%e%d", ei);
-
-    genStmt(IfElse->beans[1], buff2);
-    genStmt(IfElse->beans[2], buff3);
-
-//    free(end);
-
-    //if br end
-    sprintf(s2 + strlen(s2), "  br label %%e%d\n\n", ei);
-    sprintf(s4 + strlen(s4), "  br label %%e%d\n\n", ei);
-    sprintf(s4 + strlen(s4), "%%e%d:\t\t;if-else-end\n", ei);
-
-    ei++;
-    ti++;
-    fi++;
+        sprintf(s2 + strlen(s2), "  br label %%e%d\n\n", ei);//if br end
+        sprintf(s4 + strlen(s4), "  br label %%e%d\n\n", ei);//else br end
+        sprintf(s4 + strlen(s4), "%%e%d:%s;if-else-end\n", ei, comm_space);
+        ei++;
+        ti++;
+        fi++;
+    } else if (*cond_result) {//always true
+        printf("warning:expression always true can't reach the else-body sentence\n");
+        genStmt(IfElse->beans[1], buff2);//if-body
+    } else {//always false
+        printf("warning:expression always false can't reach the if-body sentence\n");
+        genStmt(IfElse->beans[2], buff3);//else-body
+    }
 
     bool out = buff == NULL;
     if (out) buff = newStringP();
@@ -438,8 +453,8 @@ void genIfElse(Bean IfElse, String *buff) {
 
 void genWhile(Bean While, String *buff) {
     String s1 = newString(100);//while br cond
-    String s2 = newString(100);//while
-    String s3 = newString(100);//while br cond and end:
+    String s2 = newString(100 + strlen(comm_space));//while
+    String s3 = newString(100 + strlen(comm_space));//while br cond and end:
     String *buff1 = newStringP();
     String *buff2 = newStringP();
 
@@ -448,9 +463,9 @@ void genWhile(Bean While, String *buff) {
 
     genCond(While->beans[0], buff1);
 
-    sprintf(s2 + strlen(s2), "%%t%d:\t\t;while-body\n", ti);
+    sprintf(s2 + strlen(s2), "%%t%d:%s;while-body\n", ti, comm_space);
     sprintf(s3 + strlen(s3), "  br label %%%d\n\n", cond_start);
-    sprintf(s3 + strlen(s3), "%%f%d:\t\t;while-end\n", fi);
+    sprintf(s3 + strlen(s3), "%%f%d:%s;while-end\n", fi, comm_space);
 
 
     start = malloc(20);
@@ -484,10 +499,6 @@ int *genCond(Bean Cond, String *buff) {
     cond = false;
 
     if (arg != NULL) return arg;
-    if (*Cond->beans[0]->value != '&' && *Cond->beans[0]->value != '|') {
-        //unit(add br)
-        sprintf(s + strlen(s), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
-    }
 
     bool out = buff == NULL;
     if (out) buff = newStringP();
@@ -1080,7 +1091,11 @@ int *genLAndExp(Bean LAndExp, String *buff) {
         String p;
         if (arg1 == NULL) p = *buff1;
         if (arg2 == NULL) p = *buff2;
-        sprintf(s + strlen(s), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
+
+        Bean Exp = arg1 == NULL ? LAndExp->beans[0] : LAndExp->beans[1];
+        //only generate br when unit
+        if (*Exp->value != '&' && *Exp->value != '|')
+            sprintf(s + strlen(s), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
 
         bool out = buff == NULL;
         if (out) buff = newStringP();
@@ -1149,7 +1164,11 @@ int *genLOrExp(Bean LOrExp, String *buff) {
         String p;
         if (arg1 == NULL) p = *buff1;
         if (arg2 == NULL) p = *buff2;
-        sprintf(s + strlen(s), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
+
+        Bean Exp = arg1 == NULL ? LOrExp->beans[0] : LOrExp->beans[1];
+        //only generate br when unit
+        if (*Exp->value != '&' && *Exp->value != '|')
+            sprintf(s + strlen(s), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
 
         bool out = buff == NULL;
         if (out) buff = newStringP();

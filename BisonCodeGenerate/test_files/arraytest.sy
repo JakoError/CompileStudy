@@ -1,0 +1,10 @@
+void func(int a1[][2],int a2,int c[]){
+    
+}
+int main(){
+    int a[3][4][5] = {1,2};
+    int b = 1;
+    int c[20] = {};
+    func(a[1],b,c);
+    c[2] = a[2][3][4];
+}

@@ -13,10 +13,17 @@ extern FILE *yyin;
 extern int yyparse(void);
 
 int main(int argc, char **argv) {
-    if (argc > 1)
+    if (argc > 1) {
         yyin = fopen(argv[1], "r");
-    else
+        if (yyin == NULL){
+            printf("open fail errno = %d reason %s\n", errno, strerror(errno));
+            printf("input from console(flex and bison won't work finely)exit\n");
+            return 0;
+        }
+    } else {
+        printf("please set the first argument .sy filepath\n");
         return 0;
+    }
     root = beanInfo("root", NULL);
     printf("--start parse--\n");
     yyparse();
@@ -26,12 +33,23 @@ int main(int argc, char **argv) {
     if (argc > 2)
         genOut = fopen(argv[2], "w+");
     else {
-        printf("please set the second argument\n");
+        printf("please set the second argument .ll filepathn");
         return 0;
     }
-    if (genOut == NULL)
-        printf("open file failed\n");
 
+    if (genOut == NULL) {
+        printf("open fail errno = %d reason %s\n", errno, strerror(errno));
+    } else {
+        printf("result .ll file path:%s\n", argv[2]);
+    }
+
+    String *file_name = newStringP();
+    char *p = argv[1] + strlen(argv[1]);
+    while (p != argv[1] && *p != '\\') p--;
+    if (p != argv[1]) p++;
+    mystrcat(file_name, p);
+
+    printf("--generate start--\n");
 
     range = newList(NULL);
 
@@ -39,7 +57,7 @@ int main(int argc, char **argv) {
     funcPara = createHashMap(NULL, NULL, 0);
 
     fprintf(genOut, "; ModuleID = '%s'\n"
-                    "source_filename = \"%s\"\n", argv[1], argv[1]);
+                    "source_filename = \"%s\"\n", *file_name, *file_name);
     fprintf(genOut, "target datalayout = \"e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n"
                     "target triple = \"x86_64-pc-windows-msvc19.29.30038\"\n\n"
                     "; Function Attrs: argmemonly nofree nosync nounwind willreturn writeonly\n"
@@ -55,5 +73,6 @@ int main(int argc, char **argv) {
             "attributes #1 = { argmemonly nofree nosync nounwind willreturn writeonly }\n");
     fflush(genOut);
 
+    printf("--generate finish--\n");
     return 0;
 }
