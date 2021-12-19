@@ -18,7 +18,6 @@ int fi = 0;
 int ei = 0;
 
 bool cond = false;
-bool in_if = false;
 bool in_while = false;
 //for break and continue
 String start = NULL;
@@ -543,22 +542,18 @@ void genStmt(Bean Stmt, String *buff) {
     } else if (strcmp(Stmt->value, "block") == 0) {
         genBlock(Stmt->beans[0], buff);
     } else if (strcmp(Stmt->value, "if") == 0) {
-        in_if = true;
         genIf(Stmt, buff);
-        in_if = false;
     } else if (strcmp(Stmt->value, "if-else") == 0) {
-        in_if = true;
         genIfElse(Stmt, buff);
-        in_if = false;
     } else if (strcmp(Stmt->value, "while") == 0) {
         in_while = true;
         genWhile(Stmt, buff);
         in_while = false;
     } else if (strcmp(Stmt->value, "break") == 0) {
-        if (!in_if && !in_while) errorPrint("'break' only use in while or if");
+        if (!in_while) errorPrint("'break' only use in while");
         sprintf(s + strlen(s), "  br label %s\n\n", end);
     } else if (strcmp(Stmt->value, "continue") == 0) {
-        if (in_while) errorPrint("'continue' only use in while");
+        if (!in_while) errorPrint("'continue' only use in while");
         sprintf(s + strlen(s), "  br label %s\n\n", start);
     } else if (strcmp(Stmt->value, "return") == 0) {
         if (Stmt->i == 0)

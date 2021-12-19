@@ -7,7 +7,7 @@ int main(){
     {
         a = b + a;
     }
-    
+
     if(a>2&&b==3||c123==2&&d321>c123)
         b = b + 3;
     else
@@ -53,4 +53,9 @@ int main(){
     if (0||a==2&&b==3){
         return 10;
     }
+
+//error
+    //if(a){
+    //    return a;
+    //}
 }
