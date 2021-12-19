@@ -38,33 +38,32 @@ void genCompUnit(Bean CompUnit, String *buff) {
 
 void genDecl(Bean Decl, String *buff) {
     if (strcmp(Decl->type, "VarDecl") == 0) {
-        genVarDecl(Decl->beans[0], buff);
+        genVarDecl(Decl->beans[0], buff, false);
         return;
-    } else {
-        printf("Type not match VarDecl: '%s'", Decl->type);
     }
-    genVarDecl(Decl->beans[0], buff);
+    if (strcmp(Decl->type, "ConstDecl") == 0) {
+        genVarDecl(Decl->beans[0], buff, true);
+        return;
+    }
+    printf("Type not match VarDecl: '%s'", Decl->type);
+    exit(0);
 }
 
-void genVarDecl(Bean VarDecl, String *buff) {
-    genVarDefs(VarDecl, buff);
+void genVarDecl(Bean VarDecl, String *buff, bool is_const) {
+    genVarDefs(VarDecl, buff, is_const);
 }
 
 
-void genVarDefs(Bean VarDefs, String *buff) {
+void genVarDefs(Bean VarDefs, String *buff, bool is_const) {
     for (int i = 0; i < VarDefs->i; ++i)
-        genVarDef(VarDefs->beans[i], buff);
+        genVarDef(VarDefs->beans[i], buff, is_const);
 }
 
-void genVarDef(Bean VarDef, String *buff) {
+void genVarDef(Bean VarDef, String *buff, bool is_const) {
     String s = newString(20 + strlen(comm_space));
     String *buff1 = newStringP();//array (type)
     String *buff2 = newStringP();//init store
 
-    if (VarDef == NULL || strcmp(VarDef->type, "VarDef") != 0) {
-        printf("Error-VarDef type dose not match '%s'", VarDef->value);
-        exit(0);
-    }
     //reserved id
     int *id_mark = NULL;//NULL is global
     if (range->next != NULL) {
@@ -113,14 +112,7 @@ void genVarDef(Bean VarDef, String *buff) {
         //regular i32
         mystrcat(buff1, "i32");
 
-        //save %address and 0 to range
-        //first line--address;second line--element
-        int **var_arr = malloc(sizeof(int *) * 2);
-        var_arr[0] = id_mark;
-        var_arr[1] = malloc(sizeof(int));//not array
-        var_arr[1][0] = 0;
-        putData(range->element, VarDef->value, var_arr);
-
+        int *arg = NULL;
         if (VarDef->i != 0) {//has initval
             //int init has to be exp
             Bean InitVal = VarDef->beans[0];
@@ -128,7 +120,7 @@ void genVarDef(Bean VarDef, String *buff) {
                 printf("Error-VarDef '%s' init value should be INT NUMBER", VarDef->value);
                 exit(0);
             }
-            int *arg = genExps(InitVal->beans[0], buff2);
+            arg = genExps(InitVal->beans[0], buff2);
             String init = newString(100);
             if (arg != NULL) {
                 sprintf(init, "  store i32 %d, i32* %%%d, align 4\n", *arg, *id_mark);
@@ -137,6 +129,26 @@ void genVarDef(Bean VarDef, String *buff) {
             }
             mystrcat(buff2, init);
         }
+
+        //save %address and 0 to range
+        //first line--address;second line--element
+        int **var_arr = malloc(sizeof(int *) * 2);
+        if (is_const) {
+            if (arg == NULL) {
+                printf("Error-const '%s' init value has to be compile-time value", VarDef->value);
+                exit(0);
+            }
+            var_arr[1] = NULL;
+            var_arr[1] = malloc(sizeof(int));//not array
+            var_arr[1][0] = *arg;
+        } else {
+            var_arr[0] = id_mark;
+            var_arr[1] = malloc(sizeof(int));//not array
+            var_arr[1][0] = 0;
+        }
+        putData(range->element, VarDef->value, var_arr);
+
+
     }
 
     sprintf(s, "%%%d", *id_mark);
@@ -217,7 +229,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     //set mark 0
     mark = 0;
 
-    int **type = (int **) malloc(sizeof(int*));
+    int **type = (int **) malloc(sizeof(int *));
     *type = (int *) malloc(sizeof(int));
     **type = (strcmp(FuncFuncDef->type, "FuncDef-int") == 0);
     if (!putData(funcType, FuncFuncDef->value, type)) {
@@ -369,7 +381,7 @@ int *genFuncFParam(Bean FuncFParam, String *buff) {
 void genBlock(Bean Block, String *buff) {
     range = newList(range);
     genBlockItems(Block->beans[0], buff);
-    exitRange();
+    range = exitRange(range);
 }
 
 void genBlockItems(Bean BlockItems, String *buff) {
@@ -643,7 +655,7 @@ int *genArrayExps(Bean ArrayExps, String *buff) {
  * \n set 0 - store 1 - read
  * @param LVal LVal Bean
  * @param io 0 - store 1 - read
- * @return String of \@i or %i(only store available)
+ * @return String of \@i or %i(only store available) or const int String(only read available)
  */
 String genLVal(Bean LVal, String *buff, bool io) {
     String s = newString(1000);
@@ -676,6 +688,15 @@ String genLVal(Bean LVal, String *buff, bool io) {
     }
 
     bool add_load = true;
+
+    if (value[1] == NULL) {//const
+        if (!io) {
+            printf("Error-const '%s' is not assignable\n", LVal->value);
+            exit(0);
+        } else {
+            return itos(value[0][0]);
+        }
+    }
 
     if (value[1][0] == 0) {//0 element when define
         if (io) {//read
@@ -777,7 +798,12 @@ int *genExps(Bean Exp, String *buff) {
         return result;
     }
     if (strcmp(Exp->type, "LVal") == 0) {//in exp LVal to read
-        genLVal(Exp, buff, 1);
+        String str = genLVal(Exp, buff, 1);
+        if (str != NULL){//const LVal
+            int *const_result = malloc(sizeof(int));
+            *const_result = atoi(str);
+            return const_result;
+        }
         return NULL;
     }
     if (strcmp(Exp->type, "UnaryExp") == 0)

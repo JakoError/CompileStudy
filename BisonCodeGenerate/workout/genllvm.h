@@ -17,11 +17,11 @@ void genCompUnit(Bean CompUnit, String *buff);
 
 void genDecl(Bean Decl, String *buff);
 
-void genVarDecl(Bean VarDecl, String *buff);
+void genVarDecl(Bean VarDecl, String *buff,bool is_const);
 
-void genVarDefs(Bean VarDefs, String *buff);
+void genVarDefs(Bean VarDefs, String *buff,bool is_const);
 
-void genVarDef(Bean VarDef, String *buff);
+void genVarDef(Bean VarDef, String *buff, bool is_const);
 
 void genFuncDef(Bean FuncFuncDef, String *buff);
 

@@ -1771,7 +1771,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 95 "lrparser.y"
-    {(yyval.bean) = beanInfo("BlockItems","empty  ");;}
+    {(yyval.bean) = beanInfo("BlockItems","empty");;}
     break;
 
   case 39:

@@ -20,6 +20,6 @@ List newList(List);
 
 VALUE_TYPE getVarValue(KEY_TYPE key);
 
-void exitRange();
+List exitRange(List list);
 
 #endif //FLEXSTUDY_LIST_H

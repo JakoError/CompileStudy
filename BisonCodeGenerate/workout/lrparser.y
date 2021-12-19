@@ -92,7 +92,7 @@ Block: '{' BlockItems '}'  {$$ = beanInfo("Block",NULL);addBean($$,$2);}
      ;
 
 BlockItems: BlockItem BlockItems    {$$ = beanInfo("BlockItems",NULL);addBean($$,$1);addBeans($$,$2);}
-          |                         {$$ = beanInfo("BlockItems","empty  ");}
+          |                         {$$ = beanInfo("BlockItems","empty");}
           ;
 
 BlockItem: Decl     {$$ = beanInfo("BlockItem","Decl");addBean($$,$1);}

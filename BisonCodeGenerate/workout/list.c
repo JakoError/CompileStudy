@@ -37,10 +37,11 @@ VALUE_TYPE getVarValue(KEY_TYPE key) {
     return result;
 }
 
-void exitRange() {
-    if (range == NULL) return;
-    List p = range;
-    range = range->next;
+List exitRange(List list) {
+    if (list == NULL) return NULL;
+    List p = list;
+    list = list->next;
     freeHashMap(p->element);
     free(p);
+    return  list;
 }
