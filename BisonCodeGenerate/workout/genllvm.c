@@ -446,25 +446,32 @@ void genWhile(Bean While, String *buff) {
     String *buff1 = newStringP();
     String *buff2 = newStringP();
 
+    //while special br to set start(continue-ues)
     sprintf(s1 + strlen(s1), "  br label %%%d\n\n%%%d:\n", mark, mark);
     int cond_start = mark++;
 
-    genCond(While->beans[0], buff1);
+    int *cond_result = genCond(While->beans[0], buff1);
 
-    sprintf(s2 + strlen(s2), "%%t%d:%s;while-body\n", ti, comm_space);
-    sprintf(s3 + strlen(s3), "  br label %%%d\n\n", cond_start);
-    sprintf(s3 + strlen(s3), "%%f%d:%s;while-end\n", fi, comm_space);
+    if (cond_result == NULL) {
+        sprintf(s2 + strlen(s2), "%%t%d:%s;while-body\n", ti, comm_space);
+        sprintf(s3 + strlen(s3), "  br label %%%d\n\n", cond_start);
+        sprintf(s3 + strlen(s3), "%%f%d:%s;while-end\n", fi, comm_space);
 
+        start = malloc(20);
+        end = malloc(20);
+        sprintf(start, "%%%d", cond_start);
+        sprintf(end, "%%f%d", fi);
 
-    start = malloc(20);
-    end = malloc(20);
-    sprintf(start, "%%%d", cond_start);
-    sprintf(end, "%%f%d", fi);
-
-    ti++;
-    fi++;
+        ti++;
+        fi++;
+    } else if (*cond_result) {//always true
+        printf("warning:expression always true---endless while loop\n");
+    } else {//always false
+        printf("warning:expression always false can't reach the while-body sentence\n");
+        return;
+    }
     genStmt(While->beans[1], buff2);
-
+    
     bool out = buff == NULL;
     if (out) buff = newStringP();
     mystrcat(buff, s1);
