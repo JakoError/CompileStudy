@@ -1,7 +1,7 @@
 //
 // Created by JakoError on 2021/10/13.
 //
-#include "main_lex.h"
+#include "man_lex.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -238,7 +238,7 @@ int main() {
             printf("open fail errno = %d reason %s\n", errno, strerror(errno));
             printf("源文件路径(默认in.sy):");
             scanf("%s", inPath);
-//            inPath = "D:\\Codes\\flex\\FlexStudy\\whileif.sy";
+//            inPath = "whileif.sy";
             printf("\n%s\n", inPath);
             in = fopen(inPath, "r");
         } while (in == NULL);
