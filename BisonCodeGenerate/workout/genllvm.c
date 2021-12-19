@@ -369,9 +369,6 @@ void genIf(Bean If, String *buff) {
         sprintf(s2 + strlen(s2), "%%f%d:%s;if-end\n", fi, comm_space);
         ti++;
         fi++;
-        //set end before body
-        end = malloc(20);
-        sprintf(end, "%%f%d", fi);
     } else if (*cond_result) {//always true
         printf("warning:expression always true\n");
     } else {//always false
@@ -380,8 +377,6 @@ void genIf(Bean If, String *buff) {
     }
 
     genStmt(If->beans[1], buff2);
-
-//    free(end);
 
     bool out = buff == NULL;
     if (out) buff = newStringP();
@@ -409,14 +404,8 @@ void genIfElse(Bean IfElse, String *buff) {
     if (cond_result == NULL) {
         sprintf(s1 + strlen(s1), "%%t%d:%s;if-body\n", ti, comm_space);
         sprintf(s3 + strlen(s3), "%%f%d:%s;else-body\n", fi, comm_space);
-        //set end before body
-        end = malloc(20);
-        sprintf(end, "%%e%d", ei);
         ti++;
         fi++;
-        //set end before body
-        end = malloc(20);
-        sprintf(end, "%%f%d", fi);
         genStmt(IfElse->beans[1], buff2);//if-body
         genStmt(IfElse->beans[2], buff3);//else-body
 
