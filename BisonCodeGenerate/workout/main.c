@@ -28,7 +28,9 @@ int main(int argc, char **argv) {
     printf("--start parse--\n");
     yyparse();
     printf("--end parse--\n");
+    printf("--ast start--\n");
     printAst(root, 0);
+    printf("--ast end--\n");
 
     if (argc > 2)
         genOut = fopen(argv[2], "w+");

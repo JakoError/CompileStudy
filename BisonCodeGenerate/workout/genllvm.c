@@ -139,7 +139,7 @@ void genVarDef(Bean VarDef, String *buff) {
         }
     }
 
-    sprintf(s, "  %%%d", *id_mark);
+    sprintf(s, "%%%d", *id_mark);
     s = genAlloca(s, *buff1, align);
     sprintf(s + strlen(s), "%s; define %s\n", comm_space, VarDef->value);
 
@@ -156,7 +156,7 @@ void genVarDef(Bean VarDef, String *buff) {
 
 String genAlloca(String lval, String type, int align) {
     String s = newString(strlen(lval) + strlen(type) + 100);
-    sprintf(s, "%s = alloca %s, align %d", lval, type, align);
+    sprintf(s, "  %s = alloca %s, align %d", lval, type, align);
     return s;
 }
 
@@ -217,16 +217,17 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     //set mark 0
     mark = 0;
 
-    int *type = (int *) malloc(sizeof(int));
-    *type = strcmp(FuncFuncDef->type, "FuncDef-int") == 0;
-    if (!putData(funcType, FuncFuncDef->value, &type)) {
+    int **type = (int **) malloc(sizeof(int*));
+    *type = (int *) malloc(sizeof(int));
+    **type = (strcmp(FuncFuncDef->type, "FuncDef-int") == 0);
+    if (!putData(funcType, FuncFuncDef->value, type)) {
         printf("Error-redefine function: '%s'", FuncFuncDef->value);
         exit(0);
     }
 
     mystrcat(buff_s, "; Function Attrs: noinline nounwind optnone uwtable\ndefine dso_local ");
 
-    if (*type)
+    if (**type)
         mystrcat(buff_s, "i32 @");
     else
         mystrcat(buff_s, "void @");
@@ -242,7 +243,8 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     } else {
         putData(funcPara, FuncFuncDef->value, genFuncFParams(FuncFuncDef->beans[0], buff1));
         mystrcat(buff_s, *buff1);
-        mystrcat(buff_s, " #0 {\n");
+        //genFuncFParams will generate #0 {... because para need to pre-'redefine'
+//        mystrcat(buff_s, " #0 {\n");
         Block = FuncFuncDef->beans[1];
     }
     mark++;
@@ -251,9 +253,10 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
 
     if (BlockItems->i == 0//empty block or last not return
         || strcmp(toString(BlockItems->beans[BlockItems->i - 1]->beans[0]), "Stmt(return)") != 0) {
-        if (*type)
+        if (**type) {
+            printf("warning: non-void function '%s' does not return a value\n", FuncFuncDef->value);
             func_end = "  ret i32 0\n}\n\n";
-        else
+        } else
             func_end = "  ret void\n}\n\n";
     }
 
@@ -275,6 +278,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
 int **genFuncFParams(Bean FuncFParams, String *buff) {
     String *buff_s = newStringP();
     String *buff1 = newStringP();
+    String *buff2 = newStringP();//generate param in block
 
     mystrcat(buff_s, "(");
     int **paras = (int **) malloc(sizeof(int *) * (FuncFParams->i + 1));
@@ -282,20 +286,49 @@ int **genFuncFParams(Bean FuncFParams, String *buff) {
     for (int i = 0; i < FuncFParams->i; ++i) {
         paras[i + 1] = genFuncFParam(FuncFParams->beans[i], buff1);
         mystrcat(buff_s, *buff1);
+
+        //generate func para in block read
+        //divide type
+        String *buff1_clone = newStringP();
+        mystrcat(buff1_clone, *buff1);
+        String type = *buff1_clone;
+        char *p = type + strlen(type);
+        while (*p != ' ') p--;
+        *p = '\0';
+
+        String lval = newString(20);
+        int align = *(p - 1) == '*' ? 8 : 4;
+        sprintf(lval, "%%%d", mark + FuncFParams->i);
+        mystrcat(buff2, genAlloca(lval, type, align));
+        //store [2 x i32]* %0, [2 x i32]** %6, align 8
+        mystrcat(buff2, "\n  store ");
+        mystrcat(buff2, *buff1);
+        mystrcat(buff2, ", ");
+        mystrcat(buff2, type);
+        mystrcat(buff2, "* ");
+        mystrcat(buff2, lval);
+        mystrcat(buff2, ", align ");
+        mystrcat(buff2, itos(align));
+        mystrcat(buff2, "\n");
+
         freeBuff(buff1);
         if (i == FuncFParams->i - 1)
             mystrcat(buff_s, ")");
         else
             mystrcat(buff_s, ", ");
     }
+    mystrcat(buff_s, " #0 {\n");
+    mark += FuncFParams->i;
 
     bool out = buff == NULL;
     if (out) buff = newStringP();
     mystrcat(buff, *buff_s);
+    mystrcat(buff, *buff2);
     if (out) fprintf(genOut, "%s", *buff);
 
     freeBuff(buff_s);
     freeBuff(buff1);
+    freeBuff(buff2);
     return paras;
 }
 
