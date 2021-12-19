@@ -494,6 +494,12 @@ int *genCond(Bean Cond, String *buff) {
     String s = newString(1000);
     String *buff1 = newStringP();
 
+    if (strcmp(Cond->beans[0]->type, "LVal") == 0) {
+        printf("Error-please set condition with \"'id' != 0\" or \"'id' == 0\" when call id:%s",
+               Cond->beans[0]->value);
+        exit(0);
+    }
+
     cond = true;
     int *arg = genExps(Cond->beans[0], buff1);
     cond = false;
@@ -1074,6 +1080,19 @@ int *genLAndExp(Bean LAndExp, String *buff) {
     String *buff2 = newStringP();
     //interrupt
 
+    //ban unit LVal in condition
+    if (strcmp(LAndExp->beans[0]->type, "LVal") == 0) {
+        printf("Error-please set condition with \"'id' != 0\" or \"'id' == 0\" when call id:%s",
+               LAndExp->beans[0]->value);
+        exit(0);
+    }
+    if (strcmp(LAndExp->beans[1]->type, "LVal") == 0) {
+        printf("Error-please set condition with \"'id' != 0\" or \"'id' == 0\" when call id:%s",
+               LAndExp->beans[1]->value);
+        exit(0);
+    }
+
+
     int *arg1 = genExps(LAndExp->beans[0], buff1);
     //pre consume
     int pre_t = ti++;
@@ -1146,6 +1165,16 @@ int *genLOrExp(Bean LOrExp, String *buff) {
     String *buff1 = newStringP();
     String *buff2 = newStringP();
     //interrupt
+    if (strcmp(LOrExp->beans[0]->type, "LVal") == 0) {
+        printf("Error-please set condition with \"'id' != 0\" or \"'id' == 0\" when call id:%s",
+               LOrExp->beans[0]->value);
+        exit(0);
+    }
+    if (strcmp(LOrExp->beans[1]->type, "LVal") == 0) {
+        printf("Error-please set condition with \"'id' != 0\" or \"'id' == 0\" when call id:%s",
+               LOrExp->beans[1]->value);
+        exit(0);
+    }
 
     int *arg1 = genExps(LOrExp->beans[0], buff1);
     //pre consume
