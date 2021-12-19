@@ -215,7 +215,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     String func_end = "}\n\n";
 
     //set mark 0
-    mark = 0;
+    mark = 1;
 
     int *type = (int *) malloc(sizeof(int));
     *type = strcmp(FuncFuncDef->type, "FuncDef-int") == 0;
@@ -365,7 +365,7 @@ void genIf(Bean If, String *buff) {
 
     if (cond_result == NULL) {
         sprintf(s1 + strlen(s1), "%%t%d:%s;if-body\n", ti, comm_space);
-        sprintf(s2 + strlen(s2), "  br %%f%d\n\n", fi);
+        sprintf(s2 + strlen(s2), "  br label %%f%d\n\n", fi);
         sprintf(s2 + strlen(s2), "%%f%d:%s;if-end\n", fi, comm_space);
         ti++;
         fi++;
@@ -447,31 +447,34 @@ void genWhile(Bean While, String *buff) {
     String *buff2 = newStringP();
 
     //while special br to set start(continue-ues)
-    sprintf(s1 + strlen(s1), "  br label %%%d\n\n%%%d:\n", mark, mark);
+    sprintf(s1 + strlen(s1), "  br label %%%d\n\n%%%d:%s; while start\n", mark, mark, comm_space);
     int cond_start = mark++;
 
     int *cond_result = genCond(While->beans[0], buff1);
 
     if (cond_result == NULL) {
-        sprintf(s2 + strlen(s2), "%%t%d:%s;while-body\n", ti, comm_space);
-        sprintf(s3 + strlen(s3), "  br label %%%d\n\n", cond_start);
-        sprintf(s3 + strlen(s3), "%%f%d:%s;while-end\n", fi, comm_space);
-
-        start = malloc(20);
-        end = malloc(20);
-        sprintf(start, "%%%d", cond_start);
-        sprintf(end, "%%f%d", fi);
-
+        sprintf(s2 + strlen(s2), "%%t%d:%s; while-body\n", ti, comm_space);
         ti++;
-        fi++;
-    } else if (*cond_result) {//always true
-        printf("warning:expression always true---endless while loop\n");
-    } else {//always false
+    } else if (*cond_result) {
+        //no condition no label
+        sprintf(s2 + strlen(s2), "%s; while-body\n", comm_space);
+    } else {
         printf("warning:expression always false can't reach the while-body sentence\n");
         return;
     }
+
+    sprintf(s3 + strlen(s3), "  br label %%%d\n\n", cond_start);
+    sprintf(s3 + strlen(s3), "%%f%d:%s; while-end\n", fi, comm_space);
+
+    start = malloc(20);
+    end = malloc(20);
+    sprintf(start, "%%%d", cond_start);
+    sprintf(end, "%%f%d", fi);
+
+
+    fi++;
     genStmt(While->beans[1], buff2);
-    
+
     bool out = buff == NULL;
     if (out) buff = newStringP();
     mystrcat(buff, s1);
@@ -498,6 +501,10 @@ int *genCond(Bean Cond, String *buff) {
     cond = true;
     int *arg = genExps(Cond->beans[0], buff1);
     cond = false;
+    if (*Cond->beans[0]->value != '&' && *Cond->beans[0]->value != '|') {
+        //unit(add br)
+        sprintf(s + strlen(s), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
+    }
 
     if (arg != NULL) return arg;
 
@@ -512,7 +519,7 @@ int *genCond(Bean Cond, String *buff) {
 }
 
 void genStmt(Bean Stmt, String *buff) {
-    String s = newString(1000);
+    String s = newString(1000 + strlen(comm_space));
 
     if (strcmp(Stmt->type, "Stmt") != 0) {
         printf("Stmt type not match: '%s'", toString(Stmt));
@@ -547,10 +554,10 @@ void genStmt(Bean Stmt, String *buff) {
         in_while = false;
     } else if (strcmp(Stmt->value, "break") == 0) {
         if (!in_while) errorPrint("'break' only use in while");
-        sprintf(s + strlen(s), "  br label %s\n\n", end);
+        sprintf(s + strlen(s), "  br label %s%s; break\n", end, comm_space);
     } else if (strcmp(Stmt->value, "continue") == 0) {
         if (!in_while) errorPrint("'continue' only use in while");
-        sprintf(s + strlen(s), "  br label %s\n\n", start);
+        sprintf(s + strlen(s), "  br label %s%s; continue\n", start, comm_space);
     } else if (strcmp(Stmt->value, "return") == 0) {
         if (Stmt->i == 0)
             sprintf(s + strlen(s), "  ret void\n");
