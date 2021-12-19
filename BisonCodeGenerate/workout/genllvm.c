@@ -215,7 +215,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     String func_end = "}\n\n";
 
     //set mark 0
-    mark = 1;
+    mark = 0;
 
     int *type = (int *) malloc(sizeof(int));
     *type = strcmp(FuncFuncDef->type, "FuncDef-int") == 0;
@@ -245,6 +245,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
         mystrcat(buff_s, " #0 {\n");
         Block = FuncFuncDef->beans[1];
     }
+    mark++;
     //add return to function end if necessary
     Bean BlockItems = Block->beans[0];
 
@@ -690,8 +691,8 @@ String genLVal(Bean LVal, String *buff, bool io) {
             String end_call = newString(100);
             if (i == 0)//call the id of var
                 sprintf(end_call + strlen(end_call), "%s, ", var_p);
-            else//pre cal all arg so mark-1 work finely
-                sprintf(end_call + strlen(end_call), "%%%d, ", mark - 1);
+            else//pre cal all arg so mark-2(include this line ++) work finely
+                sprintf(end_call + strlen(end_call), "%%%d, ", mark - 2);
 
             if (args[i] != NULL)
                 sprintf(end_call + strlen(end_call), "i32 0, i32 %d\n", *args[i]);
