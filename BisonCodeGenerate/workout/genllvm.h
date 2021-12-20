@@ -8,20 +8,33 @@
 #include "ast.h"
 #include "hashMap.h"
 
+typedef struct glo_init{
+    Bean Init;
+    String var_name;
+    int layer;
+    bool is_const;
+} *GlobalInit;
+
+int glo_arr_i;
+GlobalInit glo_arr;
+
 FILE *genOut;
 
 HashMap funcType;
 HashMap funcPara;
 
+
 void genCompUnit(Bean CompUnit, String *buff);
 
 void genDecl(Bean Decl, String *buff);
 
-void genVarDecl(Bean VarDecl, String *buff,bool is_const);
+void genVarDecl(Bean VarDecl, String *buff, bool is_const);
 
-void genVarDefs(Bean VarDefs, String *buff,bool is_const);
+void genVarDefs(Bean VarDefs, String *buff, bool is_const);
 
 void genVarDef(Bean VarDef, String *buff, bool is_const);
+
+void genGlobal(Bean VarDef, String *buff, bool is_const);
 
 void genFuncDef(Bean FuncFuncDef, String *buff);
 

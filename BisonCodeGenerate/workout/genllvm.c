@@ -64,6 +64,11 @@ void genVarDef(Bean VarDef, String *buff, bool is_const) {
     String *buff1 = newStringP();//array (type)
     String *buff2 = newStringP();//init store
 
+    if (range->next == NULL) {
+        genGlobal(VarDef, buff, is_const);
+        return;
+    }
+
     //reserved id
     int *id_mark = NULL;//NULL is global
     if (range->next != NULL) {
@@ -166,6 +171,98 @@ void genVarDef(Bean VarDef, String *buff, bool is_const) {
     freeBuff(buff2);
 }
 
+void genGlobal(Bean VarDef, String *buff, bool is_const) {
+    String *s_buff = newStringP();
+    String *buff1 = newStringP();
+    //@gci = dso_local constant i32 1, align 4
+    //@gi = dso_local global i32 2, align 4
+    //@glarr = dso_local global [2 x [3 x i32]] zeroinitializer, align 16
+    //@cia = dso_local constant [33 x [44 x i32]] zeroinitializer, align 16
+
+    mystrcat(s_buff, "@");
+    mystrcat(s_buff, VarDef->value);
+    mystrcat(s_buff, " = dso_local ");
+
+
+    if (VarDef->i > 0 && strcmp(VarDef->beans[0]->type, "ConstExps") == 0) {
+        mystrcat(s_buff, "global ");
+        // array type
+        Bean ConstExps = VarDef->beans[0];
+        int *array = genArrayExps(ConstExps, buff1);
+        if (array == NULL) {
+            printf("Error-VarDef '%s' array define should with const size value\n", VarDef->value);
+            exit(0);
+        }
+
+        //save init wait to main
+        if (VarDef->i == 2) {
+            Bean InitVal = VarDef->beans[1];
+            if (glo_arr_i == 0)
+                glo_arr = malloc(sizeof(struct glo_init));
+            else
+                glo_arr = realloc(glo_arr, sizeof(struct glo_init) * (glo_arr_i + 1));
+            glo_arr[glo_arr_i].Init = InitVal;
+            glo_arr[glo_arr_i].var_name = VarDef->value;
+            glo_arr[glo_arr_i].layer = ConstExps->i;
+            glo_arr[glo_arr_i].is_const = is_const;
+            glo_arr_i++;
+        }
+
+        //save to map
+        int **var_arr = malloc(sizeof(int *) * 2);
+        var_arr[0] = NULL;//global
+        var_arr[1] = array;
+        putData(range->element, VarDef->value, var_arr);
+
+        mystrcat(s_buff, *buff1);
+        mystrcat(s_buff, " zeroinitializer, align 16\n");
+    } else {
+        //difference only i32 type
+        if (is_const)
+            mystrcat(s_buff, "constant ");
+        else
+            mystrcat(s_buff, "global ");
+        //i32 type
+        int init_val = 0;
+        if (VarDef->i > 0) {
+            Bean InitVal = VarDef->beans[0];
+            if (InitVal->value != NULL) {
+                printf("Error-Global VarDef '%s' init value should be INT NUMBER", VarDef->value);
+                exit(0);
+            }
+            int *arg = genExps(InitVal->beans[0], NULL);
+            if (arg == NULL) {
+                printf("Error-const '%s' init value has to be compile-time value", VarDef->value);
+                exit(0);
+            } else
+                init_val = *arg;
+        }
+        mystrcat(s_buff, "i32 ");
+        mystrcat(s_buff, itos(init_val));
+        mystrcat(s_buff, ", align 4\n");
+
+        //save to map
+        int **var_arr = malloc(sizeof(int *) * 2);
+        var_arr[0] = NULL;//global
+        if (is_const) {
+            var_arr[1] = NULL;//const
+        } else {
+            var_arr[1] = malloc(sizeof(int));
+            var_arr[1][0] = 0;
+        }
+        putData(range->element, VarDef->value, var_arr);
+    }
+
+    bool out = buff == NULL;
+    if (out) buff = newStringP();
+    mystrcat(buff, *s_buff);
+    if (out)
+        fprintf(genOut, "%s", *buff);
+
+    freeBuff(s_buff);
+    freeBuff(buff1);
+}
+
 String genAlloca(String lval, String type, int align) {
     String s = newString(strlen(lval) + strlen(type) + 100);
     sprintf(s, "  %s = alloca %s, align %d", lval, type, align);
@@ -224,7 +321,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     String *buff_s = newStringP();
     String *buff1 = newStringP();//para
     String *buff2 = newStringP();//block
-    String func_end = "}\n\n";
+    String func_end = "}\n";
 
     //set mark 0
     mark = 0;
@@ -237,7 +334,7 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
         exit(0);
     }
 
-    mystrcat(buff_s, "; Function Attrs: noinline nounwind optnone uwtable\ndefine dso_local ");
+    mystrcat(buff_s, "\n; Function Attrs: noinline nounwind optnone uwtable\ndefine dso_local ");
 
     if (**type)
         mystrcat(buff_s, "i32 @");
@@ -272,7 +369,16 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
             func_end = "  ret void\n}\n\n";
     }
 
-
+    //generate global arr first
+    if (strcmp(FuncFuncDef->value, "main") == 0) {
+        for (int i = 0; i < glo_arr_i; ++i) {
+            genArrayInits(glo_arr[i].Init, buff2, glo_arr[i].var_name, glo_arr[i].layer);
+            if (glo_arr[i].is_const) {//turn to const
+                int **key = getVarValue(glo_arr[i].var_name);
+                key[1] = NULL;
+            }
+        }
+    }
     genBlock(Block, buff2);
 
     bool out = buff == NULL;
@@ -799,7 +905,7 @@ int *genExps(Bean Exp, String *buff) {
     }
     if (strcmp(Exp->type, "LVal") == 0) {//in exp LVal to read
         String str = genLVal(Exp, buff, 1);
-        if (str != NULL){//const LVal
+        if (str != NULL) {//const LVal
             int *const_result = malloc(sizeof(int));
             *const_result = atoi(str);
             return const_result;

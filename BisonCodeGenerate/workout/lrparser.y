@@ -34,14 +34,15 @@ Decl: ConstDecl     {$$ = $1;}
 	| VarDecl       {$$ = $1;}
 	;
 
-ConstDecl: CONST INT ConstDefs ';'    {$$ = beanInfo("ConstDecl","int");addBeans($$,$3);}
+ConstDecl: CONST INT ConstDefs ';'    {$$ = beanInfo("ConstDecl","int");addBean($$,$3);}
          ;
 
 ConstDefs: ConstDef ',' ConstDefs   {$$ = beanInfo("ConstDefs",NULL);addBean($$,$1);addBeans($$,$3);}
          | ConstDef                 {$$ = beanInfo("ConstDefs",NULL);addBean($$,$1);}
          ;
 
-ConstDef: IDENT ConstExps '=' ConstInitVal  {$$ = beanInfo("ConstDef",$1);addBean($$,$4);}
+ConstDef: IDENT ConstExps '=' ConstInitVal  {$$ = beanInfo("ConstDef",$1);addBean($$,$2);addBean($$,$4);}
+		| IDENT ConstExps                   {$$ = beanInfo("ConstDef",$1);addBean($$,$2);}
         ;
 
 ConstInitVals: ConstInitVal ',' ConstInitVals   {$$ = beanInfo("ConstInitVals",NULL);addBean($$,$1);addBeans($$,$3);}
@@ -49,8 +50,8 @@ ConstInitVals: ConstInitVal ',' ConstInitVals   {$$ = beanInfo("ConstInitVals",N
              ;
 
 ConstInitVal: ConstExp              {$$ = beanInfo("ConstInitVal",NULL);addBean($$,$1);}
-            | '{' '}'               {$$ = beanInfo("ConstInitVal",NULL);}
-            | '{' ConstInitVals '}' {$$ = $2;}
+            | '{' '}'               {$$ = beanInfo("ConstInitVal","{}");}
+            | '{' ConstInitVals '}' {$$ = beanInfo("ConstInitVal","{}");addBean($$,$2);}
             ;
 
 VarDecl: INT VarDefs ';' {$$ = beanInfo("VarDecl","int");addBean($$,$2);}
