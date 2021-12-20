@@ -1,60 +1,11 @@
+const int gci = 1;
+int gi = 2;
+const int gcin = 0;
+int gin = 0;
+const int cia[33][44];
+int glarr[2][3];
+const int ciai[33][44] = {1,2,3};
+int glarri[2][3] = {1,2,3,4};
 int main(){
-    int a = 1;
-    int b = 2;
-    int c123 = 2;
-    int d321 = 2;
-    if (a + b < 3)
-    {
-        a = b + a;
-    }
-
-    if(a>2&&b==3||c123==2&&d321>c123)
-        b = b + 3;
-    else
-        a = b *2;
-
-    if(a == 1 || b == 2){
-        if (a + b == 4)
-        {
-            return 0;
-        }else
-        {
-            return 1;
-        }
-    }
-
-    if (1||a==2){
-        return 1;
-    }
-    if (a==2||6-5){
-        return 2;
-    }
-    if (3-3||a==2){
-        return 3;
-    }
-    if (a==2||0){
-        return 4;
-    }
-    if (a==2&&1){
-        return 5;
-    }
-    if (3-2&&a==2){
-        return 6;
-    }
-    if (a==2&&3-3){
-        return 7;
-    }
-    if (0&&a==2){
-        return 8;
-    }
-    if(1&&a==2||b==1){
-        return 9;
-    }
-    if (0||a==2&&b==3){
-        return 10;
-    }
-
-    if(a){
-        return a;
-    }
+    int c = glarr[1][2];
 }

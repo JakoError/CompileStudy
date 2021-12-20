@@ -1,0 +1,57 @@
+int main() {
+    int a = 1;
+    int b = 2;
+
+    while (a < 10) {
+        a = a + 1;
+        b = b - 1;
+    }
+
+    while (b < 10 && a > 0) {
+        a = a - 1;
+        b = b + 1;
+    }
+
+    while (1 && a > 0) {
+        if (a == 100)
+            break;
+        if (b == 0)
+            continue;
+        b = b + 1;
+    }
+
+    while (a < 100 && a > 0 || b < 0 && b > -100) {
+
+    }
+
+    while (1 || a == 2) {
+        return 1;
+    }
+    while (a == 2 || 6 - 5) {
+        return 2;
+    }
+    while (3 - 3 || a == 2) {
+        return 3;
+    }
+    while (a == 2 || 0) {
+        return 4;
+    }
+    while (a == 2 && 1) {
+        return 5;
+    }
+    while (3 - 2 && a == 2) {
+        return 6;
+    }
+    while (a == 2 && 3 - 3) {
+        return 7;
+    }
+    while (0 && a == 2) {
+        return 8;
+    }
+    while (1 && a == 2 || b == 1) {
+        return 9;
+    }
+    while (0 || a == 2 && b == 3) {
+        return 10;
+    }
+}
