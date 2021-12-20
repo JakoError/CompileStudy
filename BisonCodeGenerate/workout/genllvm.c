@@ -72,8 +72,9 @@ void genVarDef(Bean VarDef, String *buff, bool is_const) {
     //reserved id
     int *id_mark = NULL;//NULL is global
     if (range->next != NULL) {
-        id_mark = malloc(sizeof(int));
+        id_mark = malloc(sizeof(int) * 2);
         *id_mark = mark++;
+        id_mark[1] = is_const;
     }
 
     //check type
@@ -144,12 +145,13 @@ void genVarDef(Bean VarDef, String *buff, bool is_const) {
                 exit(0);
             }
             var_arr[1] = NULL;
-            var_arr[1] = malloc(sizeof(int));//not array
-            var_arr[1][0] = *arg;
+            var_arr[0] = malloc(sizeof(int));
+            var_arr[0][0] = *arg;
         } else {
-            var_arr[0] = id_mark;
             var_arr[1] = malloc(sizeof(int));//not array
             var_arr[1][0] = 0;
+            var_arr[0] = malloc(sizeof(int));
+            var_arr[0][0] = *id_mark;
         }
         putData(range->element, VarDef->value, var_arr);
 
@@ -210,7 +212,9 @@ void genGlobal(Bean VarDef, String *buff, bool is_const) {
 
         //save to map
         int **var_arr = malloc(sizeof(int *) * 2);
-        var_arr[0] = NULL;//global
+        var_arr[0] = malloc(sizeof(int) * 2);
+        var_arr[0][0] = -1;
+        var_arr[0][1] = VarDef->i == 2 ? 0: is_const;//global
         var_arr[1] = array;
         putData(range->element, VarDef->value, var_arr);
 
@@ -373,10 +377,6 @@ void genFuncDef(Bean FuncFuncDef, String *buff) {
     if (strcmp(FuncFuncDef->value, "main") == 0) {
         for (int i = 0; i < glo_arr_i; ++i) {
             genArrayInits(glo_arr[i].Init, buff2, glo_arr[i].var_name, glo_arr[i].layer);
-            if (glo_arr[i].is_const) {//turn to const
-                int **key = getVarValue(glo_arr[i].var_name);
-                key[1] = NULL;
-            }
         }
     }
     genBlock(Block, buff2);
@@ -404,6 +404,14 @@ int **genFuncFParams(Bean FuncFParams, String *buff) {
     for (int i = 0; i < FuncFParams->i; ++i) {
         paras[i + 1] = genFuncFParam(FuncFParams->beans[i], buff1);
         mystrcat(buff_s, *buff1);
+
+        //store to range
+        int **var_arr = malloc(sizeof(int *) * 2);
+        var_arr[0] = malloc(sizeof(int) * 2);
+        var_arr[0][0] = mark + FuncFParams->i;
+        var_arr[0][1] = false;
+        var_arr[1] = paras[i + 1];
+        putData(range->element, FuncFParams->beans[i]->value, var_arr);
 
         //generate func para in block read
         //divide type
@@ -516,9 +524,9 @@ void genIf(Bean If, String *buff) {
     int *cond_result = genCond(If->beans[0], buff1);
 
     if (cond_result == NULL) {
-        sprintf(s1 + strlen(s1), "%%t%d:%s;if-body\n", ti, comm_space);
+        sprintf(s1 + strlen(s1), "t%d:%s;if-body\n", ti, comm_space);
         sprintf(s2 + strlen(s2), "  br label %%f%d\n\n", fi);
-        sprintf(s2 + strlen(s2), "%%f%d:%s;if-end\n", fi, comm_space);
+        sprintf(s2 + strlen(s2), "f%d:%s;if-end\n", fi, comm_space);
         ti++;
         fi++;
     } else if (*cond_result) {//always true
@@ -554,8 +562,8 @@ void genIfElse(Bean IfElse, String *buff) {
     int *cond_result = genCond(IfElse->beans[0], buff1);
 
     if (cond_result == NULL) {
-        sprintf(s1 + strlen(s1), "%%t%d:%s;if-body\n", ti, comm_space);
-        sprintf(s3 + strlen(s3), "%%f%d:%s;else-body\n", fi, comm_space);
+        sprintf(s1 + strlen(s1), "t%d:%s;if-body\n", ti, comm_space);
+        sprintf(s3 + strlen(s3), "f%d:%s;else-body\n", fi, comm_space);
         ti++;
         fi++;
         genStmt(IfElse->beans[1], buff2);//if-body
@@ -563,7 +571,7 @@ void genIfElse(Bean IfElse, String *buff) {
 
         sprintf(s2 + strlen(s2), "  br label %%e%d\n\n", ei);//if br end
         sprintf(s4 + strlen(s4), "  br label %%e%d\n\n", ei);//else br end
-        sprintf(s4 + strlen(s4), "%%e%d:%s;if-else-end\n", ei, comm_space);
+        sprintf(s4 + strlen(s4), "e%d:%s;if-else-end\n", ei, comm_space);
         ei++;
         ti++;
         fi++;
@@ -599,13 +607,13 @@ void genWhile(Bean While, String *buff) {
     String *buff2 = newStringP();
 
     //while special br to set start(continue-ues)
-    sprintf(s1 + strlen(s1), "  br label %%%d\n\n%%%d:%s; while start\n", mark, mark, comm_space);
+    sprintf(s1 + strlen(s1), "  br label %%%d\n\n%d:%s; while start\n", mark, mark, comm_space);
     int cond_start = mark++;
 
     int *cond_result = genCond(While->beans[0], buff1);
 
     if (cond_result == NULL) {
-        sprintf(s2 + strlen(s2), "%%t%d:%s; while-body\n", ti, comm_space);
+        sprintf(s2 + strlen(s2), "t%d:%s; while-body\n", ti, comm_space);
         ti++;
     } else if (*cond_result) {
         //no condition no label
@@ -616,7 +624,7 @@ void genWhile(Bean While, String *buff) {
     }
 
     sprintf(s3 + strlen(s3), "  br label %%%d\n\n", cond_start);
-    sprintf(s3 + strlen(s3), "%%f%d:%s; while-end\n", fi, comm_space);
+    sprintf(s3 + strlen(s3), "f%d:%s; while-end\n", fi, comm_space);
 
     start = malloc(20);
     end = malloc(20);
@@ -707,9 +715,11 @@ void genStmt(Bean Stmt, String *buff) {
     } else if (strcmp(Stmt->value, "break") == 0) {
         if (!in_while) errorPrint("'break' only use in while");
         sprintf(s + strlen(s), "  br label %s%s; break\n", end, comm_space);
+        mark++;
     } else if (strcmp(Stmt->value, "continue") == 0) {
         if (!in_while) errorPrint("'continue' only use in while");
         sprintf(s + strlen(s), "  br label %s%s; continue\n", start, comm_space);
+        mark++;
     } else if (strcmp(Stmt->value, "return") == 0) {
         if (Stmt->i == 0)
             sprintf(s + strlen(s), "  ret void\n");
@@ -785,7 +795,7 @@ String genLVal(Bean LVal, String *buff, bool io) {
     //generate code
     //get var name(global) or address(local)
     String var_p = malloc(20 + strlen(LVal->value));
-    if (value[0] == NULL) {
+    if (value[0] == NULL || value[0][0] == -1) {
         //global
         sprintf(var_p, "@%s", LVal->value);
     } else {
@@ -795,12 +805,19 @@ String genLVal(Bean LVal, String *buff, bool io) {
 
     bool add_load = true;
 
-    if (value[1] == NULL) {//const
+    if (value[1] == NULL) {//i32 const
         if (!io) {
             printf("Error-const '%s' is not assignable\n", LVal->value);
             exit(0);
         } else {
             return itos(value[0][0]);
+        }
+    }
+
+    if (value[0] != NULL && value[0][1] == 1) {//array const
+        if (!io) {
+            printf("Error-const array '%s' is not assignable\n", LVal->value);
+            exit(0);
         }
     }
 
@@ -979,13 +996,13 @@ void genUnaryExpFunc(Bean UnaryExp, String *buff) {
     int ***para = getValue(funcPara, UnaryExp->value);
     int ***type = getValue(funcType, UnaryExp->value);
     if (para == NULL || type == NULL) {//function not found
-        printf("ERROR-function:%s not define", UnaryExp->value);
+        printf("Error-function:%s not define", UnaryExp->value);
         exit(0);
     }
     //get the count of real para
     int r_count = UnaryExp->i == 0 ? 0 : UnaryExp->beans[0]->i;
     if (***para != r_count) {
-        printf("ERROR-function:%s param num not match:%d-%d", UnaryExp->value, ***para, r_count);
+        printf("Error-function:%s param num not match:%d-%d", UnaryExp->value, ***para, r_count);
         exit(0);
     }
 
@@ -1081,10 +1098,10 @@ int *genMulExp(Bean MulExp, String *buff) {
     else
         sprintf(s + strlen(s), "srem ");
 
-    if (arg1 != NULL) sprintf(s + strlen(s), "%d", *arg1);
-    else sprintf(s + strlen(s), "i32 %%%d", i1);
+    if (arg1 != NULL) sprintf(s + strlen(s), "%d, ", *arg1);
+    else sprintf(s + strlen(s), "i32 %%%d, ", i1);
     if (arg2 != NULL) sprintf(s + strlen(s), "%d", *arg2);
-    else sprintf(s + strlen(s), "i32 %%%d", i2);
+    else sprintf(s + strlen(s), "%%%d", i2);
     sprintf(s + strlen(s), "\n");
 
     bool out = buff == NULL;
@@ -1126,7 +1143,7 @@ int *genAddExp(Bean AddExp, String *buff) {
     if (arg1 != NULL) sprintf(s + strlen(s), "%d, ", *arg1);
     else sprintf(s + strlen(s), "i32 %%%d, ", i1);
     if (arg2 != NULL) sprintf(s + strlen(s), "%d", *arg2);
-    else sprintf(s + strlen(s), "i32 %%%d", i2);
+    else sprintf(s + strlen(s), "%%%d", i2);
     sprintf(s + strlen(s), "\n");
 
     bool out = buff == NULL;
@@ -1185,7 +1202,7 @@ int *genRelExp(Bean RelExp, String *buff) {
     if (arg1 != NULL) sprintf(s + strlen(s), "%d, ", *arg1);
     else sprintf(s + strlen(s), "i32 %%%d, ", i1);
     if (arg2 != NULL) sprintf(s + strlen(s), "%d", *arg2);
-    else sprintf(s + strlen(s), "i32 %%%d", i2);
+    else sprintf(s + strlen(s), "%%%d", i2);
     sprintf(s + strlen(s), "\n");
 
     bool out = buff == NULL;
@@ -1226,7 +1243,7 @@ int *genEqExp(Bean EqExp, String *buff) {
     if (arg1 != NULL) sprintf(s + strlen(s), "%d, ", *arg1);
     else sprintf(s + strlen(s), "i32 %%%d, ", i1);
     if (arg2 != NULL) sprintf(s + strlen(s), "%d", *arg2);
-    else sprintf(s + strlen(s), "i32 %%%d", i2);
+    else sprintf(s + strlen(s), "%%%d", i2);
     sprintf(s + strlen(s), "\n");
 
     bool out = buff == NULL;
@@ -1256,16 +1273,24 @@ int *genLAndExp(Bean LAndExp, String *buff) {
         exit(0);
     }
 
-
+    int mark0 = mark;
     int *arg1 = genExps(LAndExp->beans[0], buff1);
+    int mark1 = mark - 1;
     //pre consume
     int pre_t = ti++;
     int pre_f = fi++;
     int *arg2 = genExps(LAndExp->beans[1], buff2);
+    int mark2 = mark - 1;
 
     //num interrupt 0
-    if (arg1 != NULL && !*arg1) return arg1;
-    if (arg2 != NULL && !*arg2) return arg2;
+    if (arg1 != NULL && !*arg1) {
+        mark = mark0;
+        return arg1;
+    }
+    if (arg2 != NULL && !*arg2) {
+        mark = mark0;
+        return arg2;
+    }
 
     //only one
     if (arg1 != NULL || arg2 != NULL) {
@@ -1292,20 +1317,20 @@ int *genLAndExp(Bean LAndExp, String *buff) {
         if (unit1) {
             //unit one
             //pre_t pre_f in case second is nesting
-            sprintf(s1 + strlen(s1), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, pre_t, pre_f);
+            sprintf(s1 + strlen(s1), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark1, pre_t, pre_f);
         }
         if (unit2) {
             //second unit
             //optimize fi usage
             fi--;
-            sprintf(s2 + strlen(s2), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
+            sprintf(s2 + strlen(s2), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark2, ti, fi);
         }
         if (!unit1 && !unit2) {
             //first fail merge to second fail
-            sprintf(s1 + strlen(s1), "%%f%d:\n  br label %%f%d\n\n", pre_f, fi);
+            sprintf(s1 + strlen(s1), "f%d:\n  br label %%f%d\n\n", pre_f, fi);
         }
         //connect with pre_ti
-        sprintf(s1 + strlen(s1), "%%t%d:\n", pre_t);
+        sprintf(s1 + strlen(s1), "t%d:\n", pre_t);
 
         bool out = buff == NULL;
         if (out) buff = newStringP();
@@ -1340,15 +1365,24 @@ int *genLOrExp(Bean LOrExp, String *buff) {
         exit(0);
     }
 
+    int mark0 = mark;
     int *arg1 = genExps(LOrExp->beans[0], buff1);
+    int mark1 = mark - 1;
     //pre consume
     int pre_t = ti++;
     int pre_f = fi++;
     int *arg2 = genExps(LOrExp->beans[1], buff2);
+    int mark2 = mark - 1;
 
     //num interrupt 1
-    if (arg1 != NULL && *arg1) return arg1;
-    if (arg2 != NULL && *arg2) return arg2;
+    if (arg1 != NULL && *arg1) {
+        mark = mark0;
+        return arg1;
+    }
+    if (arg2 != NULL && *arg2) {
+        mark = mark0;
+        return arg2;
+    }
 
     //only one
     if (arg1 != NULL || arg2 != NULL) {
@@ -1375,20 +1409,20 @@ int *genLOrExp(Bean LOrExp, String *buff) {
         if (unit1) {
             //unit one
             //pre_t pre_f in case second is nesting
-            sprintf(s1 + strlen(s1), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, pre_t, pre_f);
+            sprintf(s1 + strlen(s1), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark1, pre_t, pre_f);
         }
         if (unit2) {
             //second unit
             //optimize ti usage
             ti--;
-            sprintf(s2 + strlen(s2), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark - 1, ti, fi);
+            sprintf(s2 + strlen(s2), "  br i1 %%%d, label %%t%d, label %%f%d\n\n", mark2, ti, fi);
         }
         if (!unit1 && !unit2) {
             //first true merge to second true
-            sprintf(s1 + strlen(s1), "%%t%d:\n  br label %%t%d\n\n", pre_t, ti);
+            sprintf(s1 + strlen(s1), "t%d:\n  br label %%t%d\n\n", pre_t, ti);
         }
         //connect with pre_fi
-        sprintf(s1 + strlen(s1), "%%f%d:\n", pre_f);
+        sprintf(s1 + strlen(s1), "f%d:\n", pre_f);
 
         bool out = buff == NULL;
         if (out) buff = newStringP();

@@ -16,46 +16,46 @@ int main(){
     if(a == 1 || b == 2){
         if (a + b == 4)
         {
-            return 0;
+            a = 0;
         }else
         {
-            return 1;
+            a = 1;
         }
     }
 
-    if (1||a==2){
-        return 1;
+    if (1||a==1){
+        a =  1;
     }
     if (a==2||6-5){
-        return 2;
+        a =  2;
     }
-    if (3-3||a==2){
-        return 3;
+    if (3-3||a==3){
+        a =  3;
     }
-    if (a==2||0){
-        return 4;
+    if (a==4||0){
+        a =  4;
     }
-    if (a==2&&1){
-        return 5;
+    if (a==5&&1){
+        a =  5;
     }
-    if (3-2&&a==2){
-        return 6;
+    if (3-2&&a==6){
+        a =  6;
     }
-    if (a==2&&3-3){
-        return 7;
+    if (a==7&&3-3){
+        a =  7;
     }
-    if (0&&a==2){
-        return 8;
+    if (0&&a==8){
+        a =  8;
     }
-    if(1&&a==2||b==1){
-        return 9;
+    if(1&&a==9||b==1){
+        a =  9;
     }
-    if (0||a==2&&b==3){
-        return 10;
+    if (0||a==10&&b==10){
+        a =  10;
     }
 
 //error
     //if(a){
-    //    return a;
+    //    a =  a;
     //}
 }
