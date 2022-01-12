@@ -16,8 +16,8 @@
 > > > - *[lrparser.y](SyntaxAnalyzer/lrparser.y)*
 > > > - *[main.c](SyntaxAnalyzer/main.c) [ast.c](SyntaxAnalyzer/ast.c) [ast.h](SyntaxAnalyzer/ast.h)*
 > >  - **manual java process**
-> > > - *[rdcheck.java](SyntaxAnalyzer/rdcheck.java)* just check
-> > > - *[rdparser.java](SyntaxAnalyzer/rdparser.java)* generate ast
+> > > - *[rdcheck.java](/SyntaxAnalyzer/SyntaxJava/rdcheck.java)* just check
+> > > - *[rdparser.java](/SyntaxAnalyzer/SyntaxJava/rdparser.java)* generate ast
 > ## 3.**intermidiate code generator and optimizor**
 > > ### combine the semantic analyzer to it
 > > - ![ll_example](/Document/ll_example.png)
