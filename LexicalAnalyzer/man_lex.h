@@ -2,8 +2,8 @@
 // Created by JakoError on 2021/10/14.
 //
 
-#ifndef FLEXSTUDY_MAIN_LEX_H
-#define FLEXSTUDY_MAIN_LEX_H
+#ifndef COMPILESTUDY_MAIN_LEX_H
+#define COMPILESTUDY_MAIN_LEX_H
 
 struct Word;
 
@@ -27,4 +27,4 @@ int isOperator();
 
 void mstrcpy(char *, char *, int, int);
 
-#endif //FLEXSTUDY_MAIN_LEX_H
+#endif //COMPILESTUDY_MAIN_LEX_H

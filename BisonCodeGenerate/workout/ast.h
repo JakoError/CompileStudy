@@ -2,8 +2,8 @@
 // Created by JakoError on 2021/11/29.
 //
 
-#ifndef FLEXSTUDY_AST_H
-#define FLEXSTUDY_AST_H
+#ifndef COMPILESTUDY_AST_H
+#define COMPILESTUDY_AST_H
 
 typedef char *String;
 
@@ -42,4 +42,4 @@ int h_atoi(String str);
 
 String itos(int i);
 
-#endif //FLEXSTUDY_AST_H
+#endif //COMPILESTUDY_AST_H

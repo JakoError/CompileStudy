@@ -2,8 +2,8 @@
 // Created by JakoError on 2020/12/26.
 //
 #pragma once
-#ifndef FLEXSTUDY_HASHMAP_H
-#define FLEXSTUDY_HASHMAP_H
+#ifndef COMPILESTUDY_HASHMAP_H
+#define COMPILESTUDY_HASHMAP_H
 
 #include <stdbool.h>
 
@@ -69,4 +69,4 @@ void clear(HashMap hm);
 
 void freeHashMap(HashMap);
 
-#endif //FLEXSTUDY_HASHMAP_H
+#endif //COMPILESTUDY_HASHMAP_H

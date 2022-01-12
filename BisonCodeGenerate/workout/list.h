@@ -2,8 +2,8 @@
 // Created by JakoError on 2021/12/15.
 //
 
-#ifndef FLEXSTUDY_LIST_H
-#define FLEXSTUDY_LIST_H
+#ifndef COMPILESTUDY_LIST_H
+#define COMPILESTUDY_LIST_H
 
 #include "hashMap.h"
 
@@ -22,4 +22,4 @@ VALUE_TYPE getVarValue(KEY_TYPE key);
 
 List exitRange(List list);
 
-#endif //FLEXSTUDY_LIST_H
+#endif //COMPILESTUDY_LIST_H

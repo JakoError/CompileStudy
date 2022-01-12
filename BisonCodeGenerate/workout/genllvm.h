@@ -2,8 +2,8 @@
 // Created by JakoError on 2021/12/15.
 //
 
-#ifndef FLEXSTUDY_GENLLVM_H
-#define FLEXSTUDY_GENLLVM_H
+#ifndef COMPILESTUDY_GENLLVM_H
+#define COMPILESTUDY_GENLLVM_H
 
 #include "ast.h"
 #include "hashMap.h"
@@ -97,4 +97,4 @@ void freeBuff(String *buff);
 void errorPrint(String str);
 
 
-#endif //FLEXSTUDY_GENLLVM_H
+#endif //COMPILESTUDY_GENLLVM_H
