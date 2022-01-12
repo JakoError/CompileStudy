@@ -1,11 +1,10 @@
-const int gci = 1;
 int gi = 2;
-const int gcin;
-int gin;
-const int cia[33][44];
+const int gci = 1;
 int glarr[2][3];
-const int ciai[33][44] = {1,2,3};
 int glarri[2][3] = {1,2,3,4};
+const int cia[33][44];
+const int ciai[33][44] = {1,2,3};
 int main(){
-    int c = glarr[1][2];
+	cia[0][0] = 2;
+	return 0;
 }

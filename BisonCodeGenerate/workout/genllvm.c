@@ -70,12 +70,9 @@ void genVarDef(Bean VarDef, String *buff, bool is_const) {
     }
 
     //reserved id
-    int *id_mark = NULL;//NULL is global
-    if (range->next != NULL) {
-        id_mark = malloc(sizeof(int) * 2);
-        *id_mark = mark++;
-        id_mark[1] = is_const;
-    }
+    int *id_mark = malloc(sizeof(int) * 2);
+    id_mark[0] = mark++;
+    id_mark[1] = is_const;
 
     //check type
     int align = 4;
@@ -139,23 +136,20 @@ void genVarDef(Bean VarDef, String *buff, bool is_const) {
         //save %address and 0 to range
         //first line--address;second line--element
         int **var_arr = malloc(sizeof(int *) * 2);
+        var_arr[0] = id_mark;
+        var_arr[1] = malloc(sizeof(int));
+        var_arr[1][0] = 0;
         if (is_const) {
             if (arg == NULL) {
                 printf("Error-const '%s' init value has to be compile-time value", VarDef->value);
                 exit(0);
             }
-            var_arr[1] = NULL;
-            var_arr[0] = malloc(sizeof(int));
             var_arr[0][0] = *arg;
-        } else {
-            var_arr[1] = malloc(sizeof(int));//not array
-            var_arr[1][0] = 0;
-            var_arr[0] = malloc(sizeof(int));
-            var_arr[0][0] = *id_mark;
         }
+//        else {
+//            //nothing
+//        }
         putData(range->element, VarDef->value, var_arr);
-
-
     }
 
     sprintf(s, "%%%d", *id_mark);
@@ -187,8 +181,8 @@ void genGlobal(Bean VarDef, String *buff, bool is_const) {
 
 
     if (VarDef->i > 0 && strcmp(VarDef->beans[0]->type, "ConstExps") == 0) {
-        mystrcat(s_buff, "global ");
         // array type
+        mystrcat(s_buff, "global ");
         Bean ConstExps = VarDef->beans[0];
         int *array = genArrayExps(ConstExps, buff1);
         if (array == NULL) {
@@ -214,7 +208,7 @@ void genGlobal(Bean VarDef, String *buff, bool is_const) {
         int **var_arr = malloc(sizeof(int *) * 2);
         var_arr[0] = malloc(sizeof(int) * 2);
         var_arr[0][0] = -1;
-        var_arr[0][1] = VarDef->i == 2 ? 0: is_const;//global
+        var_arr[0][1] = VarDef->i == 2 ? 0 : is_const;//global const special store
         var_arr[1] = array;
         putData(range->element, VarDef->value, var_arr);
 
@@ -247,13 +241,11 @@ void genGlobal(Bean VarDef, String *buff, bool is_const) {
 
         //save to map
         int **var_arr = malloc(sizeof(int *) * 2);
-        var_arr[0] = NULL;//global
-        if (is_const) {
-            var_arr[1] = NULL;//const
-        } else {
-            var_arr[1] = malloc(sizeof(int));
-            var_arr[1][0] = 0;
-        }
+        var_arr[0] = malloc(sizeof(int) * 2);//global
+        var_arr[1] = malloc(sizeof(int));
+        var_arr[0][0] = -1;
+        var_arr[0][1] = is_const;
+        var_arr[1][0] = 0;
         putData(range->element, VarDef->value, var_arr);
     }
 
@@ -782,11 +774,12 @@ String genLVal(Bean LVal, String *buff, bool io) {
     int **value = getVarValue(LVal->value);
     //array can not beyond initial size
     int count = LVal->i == 0 ? 0 : LVal->beans[0]->i;
-    if (pointer == 0 && count != value[1][0]) {
+    int original_count = value[1] == NULL ? 0 : value[1][0];
+    if (pointer == 0 && count != original_count) {
         printf("Error-value of lval:%s should be int", LVal->value);
         exit(0);
     }
-    if (pointer != 0 && pointer != value[1][0] - count) {
+    if (pointer != 0 && pointer != original_count - count) {
         printf("Error-array type '%s' dose not match function type", LVal->value);
         exit(0);
     }
@@ -795,7 +788,7 @@ String genLVal(Bean LVal, String *buff, bool io) {
     //generate code
     //get var name(global) or address(local)
     String var_p = malloc(20 + strlen(LVal->value));
-    if (value[0] == NULL || value[0][0] == -1) {
+    if (value[0][0] == -1) {
         //global
         sprintf(var_p, "@%s", LVal->value);
     } else {
@@ -805,19 +798,21 @@ String genLVal(Bean LVal, String *buff, bool io) {
 
     bool add_load = true;
 
-    if (value[1] == NULL) {//i32 const
-        if (!io) {
-            printf("Error-const '%s' is not assignable\n", LVal->value);
-            exit(0);
+    if (value[0][1]) {//const
+        if (value[1][0] == 0) {
+            //i32 const
+            if (!io) {
+                printf("Error-const '%s' is not assignable\n", LVal->value);
+                exit(0);
+            } else {
+                return itos(value[0][0]);
+            }
         } else {
-            return itos(value[0][0]);
-        }
-    }
-
-    if (value[0] != NULL && value[0][1] == 1) {//array const
-        if (!io) {
-            printf("Error-const array '%s' is not assignable\n", LVal->value);
-            exit(0);
+            //array const
+            if (!io) {
+                printf("Error-const array '%s' is not assignable\n", LVal->value);
+                exit(0);
+            }
         }
     }
 
