@@ -1,6 +1,28 @@
 # COMPILESTUDY
-flex and bison for SysY language
+### flex and bison for SysY language
 # A project for Compiling SysY Language.
-## 1.flex(flex code/c code)
-## 2.ast tree
-## 3.bison .ll file generate
+> ## 1.**Lexical Analyzer**
+> > ### generate token flow
+> >  - **Flex/lex**
+> > > - *LexicalAnalyzer/auto_lex.l*
+> > > - *LexicalAnalyzer/lex.yy.c* (lex generate)
+> >  - **manual c process**
+> > > -  *LexicalAnalyzer/man_lex.c(.h)*
+> ## 2.**Syntax Analyzer**
+> > ### generate abstract syntax tree
+> >  - **Bison/Yacc code**
+> > > - *SyntaxAnalyzer/lrparser.y*
+> > > - *SyntaxAnalyzer/main.c SyntaxAnalyzer/ast.c SyntaxAnalyzer/ast.h*
+> >  - **manual java process**
+> > > - *SyntaxAnalyzer/rdcheck.java* just check
+> > > - *SyntaxAnalyzer/rdparser.java* generate ast
+> ## 3.**intermidiate code generator and optimizor**
+> > ### combine the semantic analyzer to it
+> >  - **manual c process** generate .ll file
+> > > - *lrparser BisonCodeGenerate/workout/main.c
+        BisonCodeGenerate/workout/lrparser.tab.c BisonCodeGenerate/workout/lrparser.tab.h
+        BisonCodeGenerate/workout/ast.c BisonCodeGenerate/workout/ast.h
+        BisonCodeGenerate/workout/lex.yy.c
+        BisonCodeGenerate/workout/genllvm.c BisonCodeGenerate/workout/genllvm.h
+        BisonCodeGenerate/workout/hashMap.c BisonCodeGenerate/workout/hashMap.h
+        BisonCodeGenerate/workout/list.c BisonCodeGenerate/workout/list.h*
