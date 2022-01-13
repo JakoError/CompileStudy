@@ -1,6 +1,7 @@
 # COMPILESTUDY
 ### flex and bison for SysY language
 # A project for Compiling SysY Language.
+##[definition of SysY](/Document/SysY语言定义.pdf)
 > ## 1.**Lexical Analyzer**
 > > ### generate token flow
 > > - ![flex_example](/Document/flex_example.png)
